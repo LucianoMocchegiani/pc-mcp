@@ -1,6 +1,6 @@
 # pc-mcp
 
-MCP que pone carpetas de esta PC a disposición de un agente (agent-runtime u otro cliente MCP): leer, buscar y escribir archivos.
+MCP que pone carpetas de una PC a disposición de un agente (agent-runtime u otro cliente MCP): leer, buscar y escribir archivos.
 
 Dos modos:
 

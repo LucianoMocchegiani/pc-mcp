@@ -8,7 +8,8 @@ name: pc-agent
 
 services:
   postgres:
-    image: postgres:17-alpine
+    # pgvector is required by the Memory search migration (CREATE EXTENSION vector).
+    image: pgvector/pgvector:pg17
     restart: unless-stopped
     environment:
       POSTGRES_USER: agent
@@ -31,6 +32,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://agent:agent@postgres:5432/memory?schema=public
       - MEMORY_MCP_PORT=3012
+      - MEMORY_EMBEDDING_CONFIG=${MEMORY_EMBEDDING_CONFIG:-}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3012/health"]
       interval: 5s
