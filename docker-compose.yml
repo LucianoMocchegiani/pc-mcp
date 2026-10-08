@@ -1,0 +1,74 @@
+# Agente sobre tu PC: agent-runtime (imágenes de ghcr.io) + pc-mcp con tu carpeta montada.
+#   1. Copiá .env.example a .env y completá PC_MCP_WORKSPACE, PC_MCP_TOKEN y AI_CONFIG.
+#   2. docker compose up -d --build   →   http://localhost:3010
+#
+# Nada queda expuesto a la red: solo la UI en 127.0.0.1. pc-mcp vive en la red interna.
+
+name: pc-agent
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent
+      POSTGRES_DB: memory
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d memory"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  memory-mcp:
+    image: ghcr.io/lucianomocchegiani/agent-runtime-memory-mcp:${AGENT_RUNTIME_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://agent:agent@postgres:5432/memory?schema=public
+      - MEMORY_MCP_PORT=3012
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3012/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  # Tu carpeta de trabajo, vista por el agente como /workspace.
+  pc-mcp:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ${PC_MCP_WORKSPACE:?Falta PC_MCP_WORKSPACE en .env}:/workspace
+    environment:
+      - PC_MCP_TOKEN=${PC_MCP_TOKEN:?Falta PC_MCP_TOKEN en .env}
+      - PC_MCP_READ_ONLY=${PC_MCP_READ_ONLY:-false}
+      - PC_MCP_BRAVE_API_KEY=${PC_MCP_BRAVE_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3020/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  agent-runtime:
+    image: ghcr.io/lucianomocchegiani/agent-runtime:${AGENT_RUNTIME_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AGENT_RUNTIME_PORT:-3010}:3010"
+    depends_on:
+      memory-mcp:
+        condition: service_healthy
+      pc-mcp:
+        condition: service_healthy
+    env_file: ./.env
+    environment:
+      - MEMORY_MCP_URL=http://memory-mcp:3012/mcp
+      - 'MCP_CONFIG={"pc":{"url":"http://pc-mcp:3020/mcp","auth":null,"headers":{"Authorization":"Bearer ${PC_MCP_TOKEN}"},"optional":true}}'
+
+volumes:
+  pgdata:

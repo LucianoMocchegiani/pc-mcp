@@ -1,0 +1,46 @@
+# Variante para desarrollo: agent-runtime y memory-mcp se compilan desde tu clon local
+# en vez de bajarse de ghcr.io. Se aplica encima de docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml watch   (recompila al guardar)
+#
+# Mismo proyecto (pc-agent), puertos y base: alternar entre imágenes y local solo recrea
+# estos dos servicios; las conversaciones se conservan.
+
+services:
+  memory-mcp:
+    image: agent-runtime-memory-mcp:local
+    build:
+      context: ${AGENT_RUNTIME_SRC:-../agent-runtime/agent-runtime}
+      target: memory-mcp
+    develop:
+      watch:
+        - path: ${AGENT_RUNTIME_SRC:-../agent-runtime/agent-runtime}/apps/memory-mcp
+          action: rebuild
+          ignore: [node_modules/, dist/]
+        - path: ${AGENT_RUNTIME_SRC:-../agent-runtime/agent-runtime}/packages/memory-contract
+          action: rebuild
+          ignore: [node_modules/, dist/]
+
+  pc-mcp:
+    develop:
+      watch:
+        - path: ./src
+          action: rebuild
+
+  agent-runtime:
+    image: agent-runtime:local
+    build:
+      context: ${AGENT_RUNTIME_SRC:-../agent-runtime/agent-runtime}
+      target: api
+    develop:
+      watch:
+        - path: ${AGENT_RUNTIME_SRC:-../agent-runtime/agent-runtime}/apps/api
+          action: rebuild
+          ignore: [node_modules/, dist/]
+        - path: ${AGENT_RUNTIME_SRC:-../agent-runtime/agent-runtime}/apps/ui
+          action: rebuild
+          ignore: [node_modules/, dist/]
+        - path: ${AGENT_RUNTIME_SRC:-../agent-runtime/agent-runtime}/packages
+          action: rebuild
+          ignore: [node_modules/, dist/]
