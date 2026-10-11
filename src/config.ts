@@ -65,6 +65,7 @@ export type PcMcpConfig = {
   roots: string[];
   token: string;
   readOnly: boolean;
+  terminalEnabled: boolean;
   braveSearchApiKey?: string;
   host: string;
   port: number;
@@ -74,6 +75,7 @@ export const config: PcMcpConfig = {
   roots: parseRoots(required('PC_MCP_ROOTS')),
   token: parseToken(required('PC_MCP_TOKEN')),
   readOnly: parseBool(process.env.PC_MCP_READ_ONLY, false),
+  terminalEnabled: parseBool(process.env.PC_MCP_ENABLE_TERMINAL, false),
   braveSearchApiKey: process.env.PC_MCP_BRAVE_API_KEY?.trim() || undefined,
   host: process.env.PC_MCP_HOST?.trim() || '127.0.0.1',
   port: parsePort(process.env.PC_MCP_PORT),

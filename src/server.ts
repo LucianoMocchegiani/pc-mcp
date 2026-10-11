@@ -10,6 +10,7 @@ import {
   listDir,
   listRoots,
   readTextFile,
+  runTerminal,
   searchText,
   writeTextFile,
 } from './tools.js';
@@ -129,6 +130,23 @@ function registerTools(server: McpServer): void {
 
   if (config.readOnly) {
     return;
+  }
+
+  if (config.terminalEnabled) {
+    server.registerTool(
+      'run_terminal',
+      {
+        description:
+          'Ejecuta un comando único en el shell del sistema. Puede modificar archivos y ejecutar cualquier programa con los permisos del proceso pc-mcp; usala solo con comandos autorizados. El directorio de trabajo debe estar dentro de las carpetas habilitadas. Timeout máximo 120 segundos; salida máxima 64 KiB.',
+        inputSchema: z.object({
+          command: z.string().min(1).max(10_000).describe('Comando para el shell del sistema'),
+          cwd: z.string().optional().describe('Directorio de trabajo dentro de las carpetas habilitadas (default: primera carpeta habilitada)'),
+          timeout_ms: z.number().int().min(1_000).max(120_000).optional().describe('Timeout (default 30 s, máximo 120 s)'),
+        }),
+        annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+      },
+      (args) => run('run_terminal', args.cwd ?? '.', () => runTerminal(args.command, args.cwd, args.timeout_ms)),
+    );
   }
 
   server.registerTool(

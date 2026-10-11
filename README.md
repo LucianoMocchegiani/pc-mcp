@@ -19,6 +19,7 @@ Dos modos:
 | `internet_search` | Busca en la web con Brave Search (requiere API key) y devuelve fragmentos y URLs |
 | `write_file` | Crea o reemplaza un archivo (no existe con `PC_MCP_READ_ONLY=true`) |
 | `edit_file` | Reemplazo de texto exacto (no existe con `PC_MCP_READ_ONLY=true`) |
+| `run_terminal` | Ejecuta un comando único en el shell del sistema (requiere `PC_MCP_ENABLE_TERMINAL=true` y modo escritura) |
 
 En agent-runtime aparecen como `pc__read_file`, etc.
 
@@ -29,7 +30,8 @@ En agent-runtime aparecen como `pc__read_file`, etc.
 - No escribe dentro de `.git`. Búsquedas y listados no entran en `node_modules`, `.git`, `dist`, etc.
 - `/mcp` exige `Authorization: Bearer <PC_MCP_TOKEN>`. Nativo escucha en `127.0.0.1` (Docker Desktop llega por `host.docker.internal`); en Docker no publica puerto.
 - En Docker solo existe la carpeta montada: aunque falle un control, no hay nada más del disco adentro del contenedor.
-- No corre comandos.
+- `run_terminal` está deshabilitada por defecto. Si la habilitás, ejecuta comandos arbitrarios con los permisos del proceso pc-mcp; limitar `cwd` no restringe lo que el comando puede acceder. En Docker queda limitada por el contenedor y sus montajes; en modo nativo puede acceder a la PC del usuario. Activala solo para un agente de confianza y protegé el token.
+- Los comandos tienen un timeout máximo de 120 segundos y la salida se limita a 64 KiB. No mantiene sesiones interactivas.
 - `internet_search` envía la consulta a Brave Search y devuelve fragmentos/URLs; no abre páginas. Los resultados externos son contenido no confiable. La tool solo se registra si configurás `PC_MCP_BRAVE_API_KEY`.
 
 ## Uso con Docker
@@ -40,6 +42,14 @@ Copy-Item .env.example .env   # completar PC_MCP_TOKEN, PC_MCP_WORKSPACE y AI_CO
 docker compose up -d --build  # http://localhost:3010
 docker compose logs -f pc-mcp # ver qué hace el agente
 ```
+
+Para habilitar comandos de terminal, agregá `PC_MCP_ENABLE_TERMINAL=true` al `.env` y recreá pc-mcp:
+
+```powershell
+docker compose up -d --build --force-recreate pc-mcp
+```
+
+Con `docker-compose.local.yml`, agregá los mismos archivos Compose al comando de recreación.
 
 - Solo la UI se publica, en `127.0.0.1`. pc-mcp y el Memory MCP quedan en la red interna.
 - El agente ve tu carpeta como `/workspace` (usá rutas relativas: `pc-mcp/package.json`).

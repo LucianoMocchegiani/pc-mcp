@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
 import picomatch from 'picomatch';
@@ -12,6 +13,9 @@ const MAX_LIST_ENTRIES = 500;
 const MAX_RESULTS = 200;
 const MAX_SEARCH_FILE_BYTES = 1024 * 1024;
 const MAX_LINE_CHARS = 300;
+const MAX_TERMINAL_OUTPUT_BYTES = 64 * 1024;
+const DEFAULT_TERMINAL_TIMEOUT_MS = 30_000;
+const MAX_TERMINAL_TIMEOUT_MS = 120_000;
 
 function isBinary(buffer: Buffer): boolean {
   return buffer.subarray(0, 8000).includes(0);
@@ -35,7 +39,97 @@ function clip(line: string): string {
 
 export function listRoots(): string {
   const mode = config.readOnly ? 'solo lectura' : 'lectura y escritura';
-  return [`Modo: ${mode}`, 'Carpetas habilitadas (las rutas relativas parten de la primera):', ...config.roots].join('\n');
+  const terminal = config.terminalEnabled && !config.readOnly ? 'habilitada' : 'deshabilitada';
+  return [
+    `Modo: ${mode}`,
+    `Ejecución de comandos en terminal: ${terminal}`,
+    'Carpetas habilitadas (las rutas relativas parten de la primera):',
+    ...config.roots,
+  ].join('\n');
+}
+
+/** Ejecuta un comando de una sola vez en el shell del sistema. Requiere habilitación explícita. */
+export async function runTerminal(command: string, inputCwd?: string, timeoutMs = DEFAULT_TERMINAL_TIMEOUT_MS): Promise<string> {
+  if (!config.terminalEnabled || config.readOnly) {
+    throw new Error('La terminal está deshabilitada. Configurá PC_MCP_ENABLE_TERMINAL=true y PC_MCP_READ_ONLY=false para habilitarla.');
+  }
+  if (!command.trim()) {
+    throw new Error('El comando no puede estar vacío');
+  }
+
+  const cwd = await resolveAllowed(inputCwd ?? config.roots[0]);
+  if (!(await stat(cwd)).isDirectory()) {
+    throw new PathError(`El directorio de trabajo no es una carpeta: ${displayPath(cwd)}`);
+  }
+  const timeout = Math.min(Math.max(timeoutMs, 1_000), MAX_TERMINAL_TIMEOUT_MS);
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, [], {
+      cwd,
+      shell: true,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    let bytes = 0;
+    let timedOut = false;
+    let truncated = false;
+    let settled = false;
+    let killTimer: NodeJS.Timeout | undefined;
+    let timeoutTimer: NodeJS.Timeout | undefined;
+
+    const append = (target: string[], chunk: Buffer): void => {
+      const remaining = MAX_TERMINAL_OUTPUT_BYTES - bytes;
+      if (remaining > 0) {
+        const kept = chunk.subarray(0, remaining);
+        target.push(kept.toString('utf8'));
+        bytes += kept.length;
+      }
+      if (chunk.length > remaining && !truncated) {
+        truncated = true;
+        child.kill();
+        killTimer = setTimeout(() => child.kill('SIGKILL'), 1_000);
+        killTimer.unref();
+      }
+    };
+
+    child.stdout.on('data', (chunk: Buffer) => append(stdout, chunk));
+    child.stderr.on('data', (chunk: Buffer) => append(stderr, chunk));
+    child.on('error', (error) => {
+      if (!settled) {
+        settled = true;
+        if (timeoutTimer) clearTimeout(timeoutTimer);
+        if (killTimer) clearTimeout(killTimer);
+        reject(error);
+      }
+    });
+
+    timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+      killTimer = setTimeout(() => child.kill('SIGKILL'), 1_000);
+      killTimer.unref();
+    }, timeout);
+    timeoutTimer.unref();
+
+    child.on('close', (code, signal) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (killTimer) clearTimeout(killTimer);
+      const status = timedOut ? `timeout después de ${timeout} ms` : `código de salida: ${code ?? signal ?? 'desconocido'}`;
+      const output = [
+        `$ ${command}`,
+        `directorio: ${displayPath(cwd)}`,
+        status,
+        stdout.length ? `stdout:\n${stdout.join('')}` : '',
+        stderr.length ? `stderr:\n${stderr.join('')}` : '',
+        truncated ? `\n… salida truncada en ${MAX_TERMINAL_OUTPUT_BYTES} bytes` : '',
+      ].filter(Boolean).join('\n');
+      resolve(output);
+    });
+  });
 }
 
 export async function listDir(input: string, depth = 1): Promise<string> {
