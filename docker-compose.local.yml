@@ -1,9 +1,6 @@
 services:
   migrate:
-    image: agent-runtime-migrate:local
-    build:
-      context: ${AGENT_RUNTIME_SRC:-../agent-runtime}
-      target: migrate
+    image: agent-runtime:local
 
   agent-runtime:
     image: agent-runtime:local
