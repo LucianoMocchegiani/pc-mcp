@@ -21,6 +21,3 @@ services:
         - path: ${AGENT_RUNTIME_SRC:-../agent-runtime}/packages
           action: rebuild
           ignore: [node_modules/, dist/]
-        - path: ${AGENT_RUNTIME_SRC:-../agent-runtime}/packages/memory
-          action: rebuild
-          ignore: [node_modules/, dist/]

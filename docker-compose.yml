@@ -20,7 +20,7 @@ services:
   migrate:
     image: ghcr.io/lucianomocchegiani/agent-runtime:${AGENT_RUNTIME_VERSION:-latest}
     working_dir: /app
-    command: ["npm", "run", "prisma:deploy", "-w", "packages/memory"]
+    command: ["npm", "run", "prisma:deploy", "-w", "apps/api"]
     restart: "no"
     depends_on:
       postgres:
