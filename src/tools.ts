@@ -51,7 +51,7 @@ export function listRoots(): string {
 /** Ejecuta un comando de una sola vez en el shell del sistema. Requiere habilitación explícita. */
 export async function runTerminal(command: string, inputCwd?: string, timeoutMs = DEFAULT_TERMINAL_TIMEOUT_MS): Promise<string> {
   if (!config.terminalEnabled || config.readOnly) {
-    throw new Error('La terminal está deshabilitada. Configurá PC_MCP_ENABLE_TERMINAL=true y PC_MCP_READ_ONLY=false para habilitarla.');
+    throw new Error('La terminal está deshabilitada. Configurá WORKSPACE_MCP_ENABLE_TERMINAL=true y WORKSPACE_MCP_READ_ONLY=false para habilitarla.');
   }
   if (!command.trim()) {
     throw new Error('El comando no puede estar vacío');

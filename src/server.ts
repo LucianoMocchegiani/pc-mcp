@@ -139,7 +139,7 @@ function registerTools(server: McpServer): void {
       'run_terminal',
       {
         description:
-          'Ejecuta un comando único en el shell del sistema. Puede modificar archivos y ejecutar cualquier programa con los permisos del proceso pc-mcp; usala solo con comandos autorizados. El directorio de trabajo debe estar dentro de las carpetas habilitadas. Timeout máximo 120 segundos; salida máxima 64 KiB.',
+          'Ejecuta un comando único en el shell del sistema. Puede modificar archivos y ejecutar cualquier programa con los permisos del proceso workspace-mcp; usala solo con comandos autorizados. El directorio de trabajo debe estar dentro de las carpetas habilitadas. Timeout máximo 120 segundos; salida máxima 64 KiB.',
         inputSchema: z.object({
           command: z.string().min(1).max(10_000).describe('Comando para el shell del sistema'),
           cwd: z.string().optional().describe('Directorio de trabajo dentro de las carpetas habilitadas (default: primera carpeta habilitada)'),
@@ -191,7 +191,7 @@ function sameSecret(header: string | undefined): boolean {
 }
 
 /**
- * `/health` sin auth; `/mcp` exige `Authorization: Bearer <PC_MCP_TOKEN>`. Stateless: un McpServer por request.
+ * `/health` sin auth; `/mcp` exige `Authorization: Bearer <WORKSPACE_MCP_TOKEN>`. Stateless: un McpServer por request.
  */
 export function createApp(): Hono {
   const app = new Hono();
@@ -203,7 +203,7 @@ export function createApp(): Hono {
     if (!sameSecret(c.req.header('Authorization'))) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
-    const server = new McpServer({ name: 'pc-mcp', version: '0.0.1' });
+    const server = new McpServer({ name: 'workspace-mcp', version: '0.0.1' });
     registerTools(server);
     const transport = new WebStandardStreamableHTTPServerTransport();
     await server.connect(transport);

@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Hono } from 'hono';
-import type { PcMcpAuthConfig } from '../config.js';
+import type { WorkspaceMcpAuthConfig } from '../config.js';
 import { AuthService } from './service.js';
 import { createAuthRoutes } from './routes.js';
 
-const owner: PcMcpAuthConfig = {
+const owner: WorkspaceMcpAuthConfig = {
   username: 'workspace-owner',
   password: 'a-secure-test-password',
   principal: { userId: 'owner-123', email: 'owner@example.test', name: 'Workspace Owner' },
 };
 
-function createTestApp(authConfig: PcMcpAuthConfig | null = owner) {
+function createTestApp(authConfig: WorkspaceMcpAuthConfig | null = owner) {
   const app = new Hono();
   app.route('/auth', createAuthRoutes(new AuthService(authConfig)));
   return app;
@@ -29,7 +29,7 @@ test('owner login returns an opaque Bearer that resolves to the stable principal
     accessToken: string;
     tokenType: string;
     expiresIn: number;
-    user: PcMcpAuthConfig['principal'];
+    user: WorkspaceMcpAuthConfig['principal'];
   };
   assert.equal(session.tokenType, 'Bearer');
   assert.equal(session.expiresIn, 8 * 60 * 60);

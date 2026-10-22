@@ -19,9 +19,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist dist
 
 # La carpeta del host se monta en /workspace (ver docker-compose.yml).
-ENV PC_MCP_ROOTS=/workspace \
-    PC_MCP_HOST=0.0.0.0 \
-    PC_MCP_PORT=3020
+ENV WORKSPACE_MCP_ROOTS=/workspace \
+    WORKSPACE_MCP_HOST=0.0.0.0 \
+    WORKSPACE_MCP_PORT=3020
 
 EXPOSE 3020
 

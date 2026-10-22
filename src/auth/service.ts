@@ -1,11 +1,11 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import type { PcMcpAuthConfig } from '../config.js';
+import type { WorkspaceMcpAuthConfig } from '../config.js';
 
 export const AUTH_SESSION_TTL_SECONDS = 8 * 60 * 60;
 const AUTH_SESSION_TTL_MS = AUTH_SESSION_TTL_SECONDS * 1000;
 const AUTH_SESSION_MAX_ENTRIES = 1024;
 
-export type Principal = PcMcpAuthConfig['principal'];
+export type Principal = WorkspaceMcpAuthConfig['principal'];
 
 export class AuthServiceError extends Error {
   constructor(readonly status: 401 | 503, message: string) {
@@ -38,7 +38,7 @@ function safeEqual(left: string, right: string): boolean {
 export class AuthService {
   private readonly sessions = new Map<string, SessionEntry>();
 
-  constructor(private readonly credentials: PcMcpAuthConfig | null) {}
+  constructor(private readonly credentials: WorkspaceMcpAuthConfig | null) {}
 
   login(username: string, password: string): OwnerSession {
     if (!this.credentials) {

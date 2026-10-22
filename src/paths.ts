@@ -68,7 +68,7 @@ async function realpathAllowMissing(target: string): Promise<string> {
 /**
  * Ruta absoluta y real dentro de alguna carpeta habilitada, o `PathError`.
  *
- * @param input Absoluta, o relativa a la primera carpeta de `PC_MCP_ROOTS`.
+ * @param input Absoluta, o relativa a la primera carpeta de `WORKSPACE_MCP_ROOTS`.
  */
 export async function resolveAllowed(
   input: string,

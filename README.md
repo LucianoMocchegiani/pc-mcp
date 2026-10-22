@@ -1,103 +1,101 @@
-# pc-mcp
+# workspace-mcp
 
-MCP que pone carpetas de una PC a disposición de un agente (agent-runtime u otro cliente MCP): leer, buscar y escribir archivos.
-
-Dos modos:
-
-- **Docker (recomendado):** `docker compose up` levanta todo: agent-runtime (imágenes de ghcr.io) + pc-mcp con tu carpeta montada en `/workspace`.
-- **Nativo:** pc-mcp corre en Windows (`npm run dev`) con rutas reales, y agent-runtime lo encuentra en `host.docker.internal:3020`.
+Servidor MCP que pone carpetas autorizadas de una PC a disposición de un agente: leer, buscar y escribir archivos, además de búsqueda web opcional y ejecución de comandos opcional.
 
 ## Herramientas
 
 | Tool | Qué hace |
-|------|----------|
-| `list_roots` | Carpetas habilitadas y modo |
-| `list_dir` | Árbol de una carpeta (hasta 3 niveles) |
-| `read_file` | Texto con números de línea; `offset` / `limit` para archivos largos |
-| `find_files` | Archivos por glob (`**/*.ts`) |
-| `search_text` | Regex o texto literal dentro de archivos |
-| `internet_search` | Busca en la web con Brave Search (requiere API key) y devuelve fragmentos y URLs |
-| `write_file` | Crea o reemplaza un archivo (no existe con `PC_MCP_READ_ONLY=true`) |
-| `edit_file` | Reemplazo de texto exacto (no existe con `PC_MCP_READ_ONLY=true`) |
-| `run_terminal` | Ejecuta un comando único en el shell del sistema (requiere `PC_MCP_ENABLE_TERMINAL=true` y modo escritura) |
+|---|---|
+| `list_roots` | Muestra las carpetas habilitadas y el modo |
+| `list_dir` | Lista el contenido de una carpeta (hasta 3 niveles) |
+| `read_file` | Lee texto con números de línea; permite `offset` y `limit` |
+| `find_files` | Busca archivos por glob |
+| `search_text` | Busca texto o expresiones regulares |
+| `write_file` | Crea o reemplaza archivos (no se registra en solo lectura) |
+| `edit_file` | Reemplaza texto exacto (no se registra en solo lectura) |
+| `internet_search` | Busca en Brave Search; requiere API key |
+| `run_terminal` | Ejecuta un comando único; requiere habilitación explícita |
 
-En agent-runtime aparecen como `pc__read_file`, etc.
-
-## Límites de seguridad
-
-- Nada fuera de `PC_MCP_ROOTS`. Rutas con `..` o symlinks/junctions que salen de la carpeta se rechazan.
-- Secretos bloqueados para leer y escribir: `.env`, `.env.*` (salvo `.env.example`), `*.pem`, `*.key`, `*.pfx`, `*.p12`, `id_rsa*`, `.npmrc`. Lo que lee el agente viaja al proveedor del modelo.
-- No escribe dentro de `.git`. Búsquedas y listados no entran en `node_modules`, `.git`, `dist`, etc.
-- `/mcp` exige `Authorization: Bearer <PC_MCP_TOKEN>`. Es un secreto de servicio Runtime → MCP, no una identidad de usuario.
-- El login opcional del dueño del workspace usa credenciales separadas (`PC_MCP_AUTH_*`): `POST /auth/login` emite un Bearer opaco y `GET /auth/me` lo valida y devuelve `{ userId, email, name }` para la introspección de Agent Runtime. `POST /auth/logout` revoca la sesión.
-- Las sesiones de login duran 8 horas y viven en memoria: un reinicio las invalida. Esta primera implementación soporta un propietario configurado por entorno; no es todavía un sistema de cuentas multiusuario ni reemplaza un proveedor de identidad de producción. No expongas `/auth/login` a Internet sin TLS y limitación de intentos en un proxy.
-- Nativo escucha en `127.0.0.1` (Docker Desktop llega por `host.docker.internal`); en Docker no publica puerto.
-- En Docker solo existe la carpeta montada: aunque falle un control, no hay nada más del disco adentro del contenedor.
-- `run_terminal` está deshabilitada por defecto. Si la habilitás, ejecuta comandos arbitrarios con los permisos del proceso pc-mcp; limitar `cwd` no restringe lo que el comando puede acceder. En Docker queda limitada por el contenedor y sus montajes; en modo nativo puede acceder a la PC del usuario. Activala solo para un agente de confianza y protegé el token.
-- Los comandos tienen un timeout máximo de 120 segundos y la salida se limita a 64 KiB. No mantiene sesiones interactivas.
-- `internet_search` envía la consulta a Brave Search y devuelve fragmentos/URLs; no abre páginas. Los resultados externos son contenido no confiable. La tool solo se registra si configurás `PC_MCP_BRAVE_API_KEY`.
+En Agent Runtime, con el identificador de servidor `workspace`, las herramientas aparecen como `workspace__read_file`, etc.
 
 ## Uso con Docker
 
-```powershell
-Copy-Item .env.example .env   # completar PC_MCP_TOKEN, PC_MCP_WORKSPACE y AI_CONFIG
-# Para habilitar búsqueda web, completar PC_MCP_BRAVE_API_KEY en .env
-docker compose up -d --build  # http://localhost:3010
-docker compose logs -f pc-mcp # ver qué hace el agente
-```
-
-Para habilitar comandos de terminal, agregá `PC_MCP_ENABLE_TERMINAL=true` al `.env` y recreá pc-mcp:
+El Compose de este repositorio ejecuta **solo workspace-mcp**. No inicia Agent Runtime, PostgreSQL ni otros servicios: podés desplegar el MCP por separado y conectarlo a un Runtime existente.
 
 ```powershell
-docker compose up -d --build --force-recreate pc-mcp
+Copy-Item .env.example .env
+# Editar .env: definir WORKSPACE_MCP_TOKEN y WORKSPACE_MCP_WORKSPACE.
+# WORKSPACE_MCP_WORKSPACE es una ruta del host; por ejemplo D:/Workspace/projects.
+docker compose up -d --build
 ```
 
-Con `docker-compose.local.yml`, agregá los mismos archivos Compose al comando de recreación.
-
-- Solo la UI se publica, en `127.0.0.1`. pc-mcp y el Memory MCP quedan en la red interna.
-- El agente ve tu carpeta como `/workspace` (usá rutas relativas: `pc-mcp/package.json`).
-- Proyecto Compose `pc-agent`: no choca con el compose de desarrollo de agent-runtime, salvo el puerto. Si el 3010 está ocupado: `AGENT_RUNTIME_PORT=3011` en `.env`.
-- Actualizar agent-runtime: `docker compose pull; docker compose up -d`.
-
-### Con agent-runtime desde tu clon local
-
-`docker-compose.local.yml` reemplaza las imágenes de ghcr.io por un build de tu clon (por defecto `../agent-runtime/agent-runtime`; otra ruta con `AGENT_RUNTIME_SRC` en `.env`):
+El servidor queda publicado en `127.0.0.1:3020`. Para revisar su estado y logs:
 
 ```powershell
-docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
-docker compose -f docker-compose.yml -f docker-compose.local.yml watch   # recompila y recrea al guardar
+docker compose ps
+docker compose logs -f workspace-mcp
 ```
 
-Mismo proyecto, puerto y base que el modo imágenes: para volver, `docker compose up -d` (recrea agent-runtime y memory-mcp con las imágenes; las conversaciones quedan).
+La carpeta de `WORKSPACE_MCP_WORKSPACE` es el único volumen del host montado dentro del contenedor, en `/workspace`. Compose configura `/workspace` como raíz permitida. No se publica el contenido del disco fuera de esa carpeta.
 
-## Uso nativo
+Para habilitar comandos de terminal, configurá `WORKSPACE_MCP_ENABLE_TERMINAL=true` en `.env` y recreá el servicio:
+
+```powershell
+docker compose up -d --build --force-recreate workspace-mcp
+```
+
+Para habilitar búsqueda web, definí `WORKSPACE_MCP_BRAVE_API_KEY` en `.env` y recreá el servicio. Las consultas se envían a Brave; la herramienta devuelve resultados y URLs, pero no abre las páginas.
+
+## Conexión desde Agent Runtime
+
+Agregá un servidor MCP con el identificador `workspace` y estos valores, adaptando la URL según dónde corra Runtime:
+
+- Runtime en Docker Desktop y MCP en el host: `http://host.docker.internal:3020/mcp`.
+- Runtime nativo en el mismo host: `http://localhost:3020/mcp`.
+- Runtime en otro host/red: configurá la URL alcanzable del MCP y exponelo detrás de TLS y un proxy/firewall apropiados; no publiques el servicio directamente a Internet.
+
+Configuración conceptual del servidor:
+
+```json
+{
+  "workspace": {
+    "url": "http://host.docker.internal:3020/mcp",
+    "auth": null,
+    "headers": {
+      "Authorization": "Bearer <WORKSPACE_MCP_TOKEN>"
+    },
+    "optional": true
+  }
+}
+```
+
+`optional: true` permite que Runtime siga funcionando si el MCP no está disponible. El token MCP es un secreto de servicio: guardá el mismo valor en la configuración de Runtime y en `.env` del MCP. En Agent Runtime, las tools quedan bajo el prefijo `workspace__`.
+
+Para que Runtime resuelva el login de usuario contra workspace-mcp, configurá en **Admin → Auth** la introspección `http://host.docker.internal:3020/auth/me` (Runtime en Docker Desktop) o `http://localhost:3020/auth/me` (Runtime nativo). En workspace-mcp, `WORKSPACE_MCP_AUTH_USERNAME`, `WORKSPACE_MCP_AUTH_PASSWORD` y `WORKSPACE_MCP_AUTH_USER_ID` deben estar configurados juntos; el password debe tener al menos 12 caracteres. El `userId` debe permanecer estable, porque Runtime lo usa para aislar conversaciones.
+
+El Bearer de usuario obtenido mediante `POST /auth/login` es independiente del `WORKSPACE_MCP_TOKEN`: el primero autentica al usuario frente a Runtime; el segundo autoriza a Runtime a llamar las herramientas MCP.
+
+## Ejecución nativa
+
+La modalidad nativa es útil para desarrollo. En este caso, las raíces permitidas son rutas reales del host y se separan con `;` en Windows:
 
 ```powershell
 npm install
-Copy-Item .env.example .env   # completar PC_MCP_ROOTS y PC_MCP_TOKEN
-npm run dev                   # o: npm run build; npm start
+Copy-Item .env.example .env
+# Configurar WORKSPACE_MCP_ROOTS y WORKSPACE_MCP_TOKEN en .env.
+npm run dev
 ```
 
-Cada llamada queda en la consola (`read_file pc-mcp/package.json ok 4ms`).
+Por defecto escucha en `127.0.0.1:3020`. Para producción, usar `npm run build` y `npm start`.
 
-En modo nativo, en `agent-runtime/.env` va el mismo token (en Docker el compose ya lo arma):
+## Seguridad
 
-```env
-MCP_CONFIG={"pc":{"url":"http://host.docker.internal:3020/mcp","auth":null,"headers":{"Authorization":"Bearer <PC_MCP_TOKEN>"},"optional":true}}
-```
-
-`optional: true`: si pc-mcp está apagado, el chat sigue andando sin estas tools. Tras editar el `.env`: `docker compose up -d --force-recreate agent-runtime`.
-
-## Login del workspace e integración con Agent Runtime
-
-Para habilitar un usuario propietario local, completá `PC_MCP_AUTH_USERNAME`, `PC_MCP_AUTH_PASSWORD` (12+ caracteres) y `PC_MCP_AUTH_USER_ID` en `.env`. El `userId` debe permanecer estable: Agent Runtime lo utiliza como clave de aislamiento de conversaciones. Reiniciá pc-mcp después de cambiar estas variables.
-
-Configura en Agent Runtime → **Admin → Auth** la URL de introspección:
-
-- Runtime en Docker y pc-mcp nativo en el host (Compose actual): `http://host.docker.internal:3020/auth/me`.
-- Runtime nativo en la misma máquina: `http://localhost:3020/auth/me`.
-- Si luego se despliegan ambos en una misma red Docker, usa el DNS y puerto internos reales de pc-mcp.
-
-El mapeo predeterminado de Runtime (`userId`, `email`, `name`) coincide con la respuesta de `/auth/me`. El cliente que inicia sesión llama a `POST /auth/login` y presenta el `accessToken` como `Authorization: Bearer ...` al llamar a Agent Runtime. Por separado, Runtime conserva `PC_MCP_TOKEN` para invocar las herramientas MCP; autenticar a una persona no reemplaza ese secreto de servicio.
-
-Esta entrega añade los endpoints de identidad en pc-mcp, pero no una pantalla de login ni el adaptador de login del UI incluido en Agent Runtime. Para una experiencia completa en el navegador, la UI huésped tendrá que recolectar esas credenciales y reenviar el Bearer a Runtime. En producción conviene sustituir el login local de un propietario por el proveedor de identidad del huésped y proteger login con TLS y limitación de intentos.
+- Solo se puede acceder a `WORKSPACE_MCP_ROOTS`. Las rutas que salen de esas raíces mediante `..` o symlinks/junctions se rechazan.
+- Secretos bloqueados para lectura y escritura: `.env`, `.env.*` (salvo `.env.example`), `*.pem`, `*.key`, `*.pfx`, `*.p12`, `id_rsa*` y `.npmrc`.
+- No escribe dentro de `.git`; búsquedas y listados omiten directorios como `node_modules`, `.git` y `dist`.
+- `/mcp` exige `Authorization: Bearer <WORKSPACE_MCP_TOKEN>`. Usá un secreto aleatorio de al menos 24 caracteres y no lo compartas.
+- El puerto Docker se publica solo en loopback (`127.0.0.1`). Para acceso remoto, usa un proxy con TLS, autenticación y reglas de red adecuadas.
+- `run_terminal` ejecuta comandos arbitrarios con los permisos del proceso dentro del contenedor. Está deshabilitada por defecto; si se activa, el proceso puede acceder a los montajes disponibles en el contenedor.
+- El login local es para un propietario configurado por entorno, no un sistema multiusuario. Las sesiones duran 8 horas, se guardan en memoria y se invalidan al reiniciar.
+- `internet_search` consulta Brave; sus resultados son contenido externo no confiable.
+- Los comandos tienen un timeout máximo de 120 segundos y la salida se limita a 64 KiB.

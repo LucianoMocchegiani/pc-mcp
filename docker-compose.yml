@@ -1,47 +1,18 @@
-name: pc-agent
+name: workspace-mcp
 
 services:
-  postgres:
-    image: pgvector/pgvector:pg17
+  workspace-mcp:
+    image: workspace-mcp:local
+    build: .
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: agent
-      POSTGRES_PASSWORD: agent
-      POSTGRES_DB: memory
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agent -d memory"]
-      interval: 3s
-      timeout: 3s
-      retries: 30
-
-  # Aplica las migraciones y termina; no es un servidor.
-  migrate:
-    image: ghcr.io/lucianomocchegiani/agent-runtime:${AGENT_RUNTIME_VERSION:-latest}
-    working_dir: /app
-    command: ["npm", "run", "prisma:deploy", "-w", "apps/api"]
-    restart: "no"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - DATABASE_URL=postgresql://agent:agent@postgres:5432/memory?schema=public
-
-  agent-runtime:
-    image: ghcr.io/lucianomocchegiani/agent-runtime:${AGENT_RUNTIME_VERSION:-latest}
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${AGENT_RUNTIME_PORT:-3010}:3010"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
     env_file: ./.env
     environment:
-      - DATABASE_URL=postgresql://agent:agent@postgres:5432/memory?schema=public
-      - 'MCP_CONFIG={"pc":{"url":"http://host.docker.internal:3020/mcp","auth":null,"headers":{"Authorization":"Bearer ${PC_MCP_TOKEN}"},"optional":true}}'
-
-volumes:
-  pgdata:
+      WORKSPACE_MCP_ROOTS: /workspace
+      WORKSPACE_MCP_HOST: 0.0.0.0
+      WORKSPACE_MCP_PORT: 3020
+    ports:
+      - "127.0.0.1:${WORKSPACE_MCP_PORT:-3020}:3020"
+    volumes:
+      - type: bind
+        source: ${WORKSPACE_MCP_WORKSPACE:-.}
+        target: /workspace

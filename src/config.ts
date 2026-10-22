@@ -15,14 +15,14 @@ function parseRoots(raw: string): string[] {
     .map((item) => item.trim())
     .filter(Boolean);
   if (roots.length === 0) {
-    throw new Error('PC_MCP_ROOTS must list at least one folder');
+    throw new Error('WORKSPACE_MCP_ROOTS must list at least one folder');
   }
   return roots.map((root) => {
     if (!isAbsolute(root)) {
-      throw new Error(`PC_MCP_ROOTS entry must be absolute: ${root}`);
+      throw new Error(`WORKSPACE_MCP_ROOTS entry must be absolute: ${root}`);
     }
     if (!statSync(root, { throwIfNoEntry: false })?.isDirectory()) {
-      throw new Error(`PC_MCP_ROOTS entry is not a folder: ${root}`);
+      throw new Error(`WORKSPACE_MCP_ROOTS entry is not a folder: ${root}`);
     }
     return realpathSync.native(root);
   });
@@ -30,7 +30,7 @@ function parseRoots(raw: string): string[] {
 
 function parseToken(raw: string): string {
   if (raw === 'replace-me' || raw.length < 24) {
-    throw new Error('PC_MCP_TOKEN must be a random secret of at least 24 chars');
+    throw new Error('WORKSPACE_MCP_TOKEN must be a random secret of at least 24 chars');
   }
   return raw;
 }
@@ -41,7 +41,7 @@ function parsePort(raw: string | undefined): number {
   }
   const port = Number(raw);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error(`Invalid PC_MCP_PORT: ${raw}`);
+    throw new Error(`Invalid WORKSPACE_MCP_PORT: ${raw}`);
   }
   return port;
 }
@@ -60,7 +60,7 @@ function parseBool(raw: string | undefined, fallback: boolean): boolean {
   throw new Error(`Invalid boolean env: ${raw}`);
 }
 
-export type PcMcpAuthConfig = {
+export type WorkspaceMcpAuthConfig = {
   username: string;
   password: string;
   principal: {
@@ -70,29 +70,29 @@ export type PcMcpAuthConfig = {
   };
 };
 
-function parseOwnerAuth(): PcMcpAuthConfig | null {
-  const username = process.env.PC_MCP_AUTH_USERNAME?.trim();
-  const password = process.env.PC_MCP_AUTH_PASSWORD;
-  const userId = process.env.PC_MCP_AUTH_USER_ID?.trim();
-  const email = process.env.PC_MCP_AUTH_EMAIL?.trim() || null;
-  const name = process.env.PC_MCP_AUTH_NAME?.trim() || null;
+function parseOwnerAuth(): WorkspaceMcpAuthConfig | null {
+  const username = process.env.WORKSPACE_MCP_AUTH_USERNAME?.trim();
+  const password = process.env.WORKSPACE_MCP_AUTH_PASSWORD;
+  const userId = process.env.WORKSPACE_MCP_AUTH_USER_ID?.trim();
+  const email = process.env.WORKSPACE_MCP_AUTH_EMAIL?.trim() || null;
+  const name = process.env.WORKSPACE_MCP_AUTH_NAME?.trim() || null;
   const configured = [username, password, userId].some((value) => value !== undefined && value !== '');
   if (!configured) return null;
   if (!username || !password || !userId) {
-    throw new Error('PC_MCP_AUTH_USERNAME, PC_MCP_AUTH_PASSWORD and PC_MCP_AUTH_USER_ID must all be configured');
+    throw new Error('WORKSPACE_MCP_AUTH_USERNAME, WORKSPACE_MCP_AUTH_PASSWORD and WORKSPACE_MCP_AUTH_USER_ID must all be configured');
   }
   if (password.length < 12) {
-    throw new Error('PC_MCP_AUTH_PASSWORD must be at least 12 characters');
+    throw new Error('WORKSPACE_MCP_AUTH_PASSWORD must be at least 12 characters');
   }
   return { username, password, principal: { userId, email, name } };
 }
 
-export type PcMcpConfig = {
+export type WorkspaceMcpConfig = {
   /** Reales (symlinks resueltos). La primera es la base de las rutas relativas. */
   roots: string[];
   token: string;
   /** Login local opcional del workspace; no es el token de servicio MCP. */
-  ownerAuth: PcMcpAuthConfig | null;
+  ownerAuth: WorkspaceMcpAuthConfig | null;
   readOnly: boolean;
   terminalEnabled: boolean;
   braveSearchApiKey?: string;
@@ -100,13 +100,13 @@ export type PcMcpConfig = {
   port: number;
 };
 
-export const config: PcMcpConfig = {
-  roots: parseRoots(required('PC_MCP_ROOTS')),
-  token: parseToken(required('PC_MCP_TOKEN')),
+export const config: WorkspaceMcpConfig = {
+  roots: parseRoots(required('WORKSPACE_MCP_ROOTS')),
+  token: parseToken(required('WORKSPACE_MCP_TOKEN')),
   ownerAuth: parseOwnerAuth(),
-  readOnly: parseBool(process.env.PC_MCP_READ_ONLY, false),
-  terminalEnabled: parseBool(process.env.PC_MCP_ENABLE_TERMINAL, false),
-  braveSearchApiKey: process.env.PC_MCP_BRAVE_API_KEY?.trim() || undefined,
-  host: process.env.PC_MCP_HOST?.trim() || '127.0.0.1',
-  port: parsePort(process.env.PC_MCP_PORT),
+  readOnly: parseBool(process.env.WORKSPACE_MCP_READ_ONLY, false),
+  terminalEnabled: parseBool(process.env.WORKSPACE_MCP_ENABLE_TERMINAL, false),
+  braveSearchApiKey: process.env.WORKSPACE_MCP_BRAVE_API_KEY?.trim() || undefined,
+  host: process.env.WORKSPACE_MCP_HOST?.trim() || '127.0.0.1',
+  port: parsePort(process.env.WORKSPACE_MCP_PORT),
 };

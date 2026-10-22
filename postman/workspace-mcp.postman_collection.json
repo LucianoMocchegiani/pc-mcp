@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "72e34b28-7a3a-4b84-a24c-7e706fe0861d",
-    "name": "pc-mcp",
-    "description": "Postman para pc-mcp sobre MCP Streamable HTTP. Usa environment local o prod; completa mcpToken con PC_MCP_TOKEN. No se incluyen secretos. Local: http://localhost:3020/mcp. Prod: https://workspace-mcp.lucianomocchegiani.xyz/mcp. mcpToken es distinto del token del login de propietario.",
+    "name": "workspace-mcp",
+    "description": "Postman para workspace-mcp sobre MCP Streamable HTTP. Usa environment local o prod; completa mcpToken con WORKSPACE_MCP_TOKEN. No se incluyen secretos. Local: http://localhost:3020/mcp. Prod: https://workspace-mcp.lucianomocchegiani.xyz/mcp. mcpToken es distinto del token del login de propietario.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -38,10 +38,10 @@
           }
         ],
         "url": "{{mcpUrl}}",
-        "description": "Inicializa MCP Streamable HTTP. Requiere PC_MCP_TOKEN en mcpToken.",
+        "description": "Inicializa MCP Streamable HTTP. Requiere WORKSPACE_MCP_TOKEN en mcpToken.",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-03-26\",\n    \"capabilities\": {},\n    \"clientInfo\": {\n      \"name\": \"postman-pc-mcp\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-03-26\",\n    \"capabilities\": {},\n    \"clientInfo\": {\n      \"name\": \"postman-workspace-mcp\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -108,7 +108,7 @@
           }
         ],
         "url": "{{mcpUrl}}",
-        "description": "Lista tools activas. internet_search requiere PC_MCP_BRAVE_API_KEY; run_terminal requiere PC_MCP_ENABLE_TERMINAL=true; tools de escritura no aparecen en solo lectura.",
+        "description": "Lista tools activas. internet_search requiere WORKSPACE_MCP_BRAVE_API_KEY; run_terminal requiere WORKSPACE_MCP_ENABLE_TERMINAL=true; tools de escritura no aparecen en solo lectura.",
         "body": {
           "mode": "raw",
           "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/list\"\n}",
@@ -123,7 +123,7 @@
     },
     {
       "name": "MCP Tools",
-      "description": "Los paths de ejemplo son relativos a la primera carpeta de PC_MCP_ROOTS. Ejecutá list_roots antes de adaptar las rutas.",
+      "description": "Los paths de ejemplo son relativos a la primera carpeta de WORKSPACE_MCP_ROOTS. Ejecutá list_roots antes de adaptar las rutas.",
       "item": [
         {
           "name": "Tool - list_roots",
@@ -444,7 +444,7 @@
     },
     {
       "name": "Auth propietario (opcional)",
-      "description": "Login de usuario separado del token de servicio MCP. Requiere PC_MCP_AUTH_USERNAME/PASSWORD/USER_ID configurados. Sesiones en memoria, expiran a las 8 h.",
+      "description": "Login de usuario separado del token de servicio MCP. Requiere WORKSPACE_MCP_AUTH_USERNAME/PASSWORD/USER_ID configurados. Sesiones en memoria, expiran a las 8 h.",
       "item": [
         {
           "name": "Login",

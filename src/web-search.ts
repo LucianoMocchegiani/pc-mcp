@@ -47,7 +47,7 @@ export async function internetSearch(query: string, apiKey: string, count = 5): 
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      throw new Error('Brave Search rechazó la API key; revisá PC_MCP_BRAVE_API_KEY');
+      throw new Error('Brave Search rechazó la API key; revisá WORKSPACE_MCP_BRAVE_API_KEY');
     }
     if (response.status === 429) {
       throw new Error('Brave Search alcanzó el límite de solicitudes; probá más tarde');
