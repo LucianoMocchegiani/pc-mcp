@@ -4,6 +4,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { z } from 'zod';
 import { config } from './config.js';
+import { AuthService } from './auth/service.js';
+import { createAuthRoutes } from './auth/routes.js';
 import {
   editTextFile,
   findFiles,
@@ -195,6 +197,7 @@ export function createApp(): Hono {
   const app = new Hono();
 
   app.get('/health', (c) => c.json({ status: 'ok' }));
+  app.route('/auth', createAuthRoutes(new AuthService(config.ownerAuth)));
 
   app.all('/mcp', async (c) => {
     if (!sameSecret(c.req.header('Authorization'))) {
