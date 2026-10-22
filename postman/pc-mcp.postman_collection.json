@@ -1,0 +1,557 @@
+{
+  "info": {
+    "_postman_id": "72e34b28-7a3a-4b84-a24c-7e706fe0861d",
+    "name": "pc-mcp",
+    "description": "Postman para pc-mcp sobre MCP Streamable HTTP. Usa environment local o prod; completa mcpToken con PC_MCP_TOKEN. No se incluyen secretos. Local: http://localhost:3020/mcp. Prod: https://workspace-mcp.lucianomocchegiani.xyz/mcp. mcpToken es distinto del token del login de propietario.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{apiBaseUrl}}/health",
+        "description": "Verifica el servicio, sin autenticación. Esperado: `{\"status\":\"ok\"}`."
+      },
+      "response": []
+    },
+    {
+      "name": "MCP - Initialize",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{mcpToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream",
+            "type": "text"
+          }
+        ],
+        "url": "{{mcpUrl}}",
+        "description": "Inicializa MCP Streamable HTTP. Requiere PC_MCP_TOKEN en mcpToken.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-03-26\",\n    \"capabilities\": {},\n    \"clientInfo\": {\n      \"name\": \"postman-pc-mcp\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "MCP - Initialized notification",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{mcpToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream",
+            "type": "text"
+          }
+        ],
+        "url": "{{mcpUrl}}",
+        "description": "Enviar luego de initialize. Notificación sin id; normalmente responde HTTP 202 sin body.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": null,\n  \"method\": \"notifications/initialized\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "MCP - Tools list",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{mcpToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream",
+            "type": "text"
+          }
+        ],
+        "url": "{{mcpUrl}}",
+        "description": "Lista tools activas. internet_search requiere PC_MCP_BRAVE_API_KEY; run_terminal requiere PC_MCP_ENABLE_TERMINAL=true; tools de escritura no aparecen en solo lectura.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/list\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "MCP Tools",
+      "description": "Los paths de ejemplo son relativos a la primera carpeta de PC_MCP_ROOTS. Ejecutá list_roots antes de adaptar las rutas.",
+      "item": [
+        {
+          "name": "Tool - list_roots",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Devuelve raíces habilitadas, modo y disponibilidad de terminal. Sin argumentos.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 10,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_roots\",\n    \"arguments\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - list_dir",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: path (string requerido); depth (integer opcional 1..3, default 1). Lista árbol de carpeta.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 11,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_dir\",\n    \"arguments\": {\n      \"path\": \".\",\n      \"depth\": 2\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - read_file",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: path (string requerido); offset (integer opcional desde 1, default 1); limit (integer opcional 1..2000, default 400). Archivos secretos/binarios bloqueados.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 12,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"read_file\",\n    \"arguments\": {\n      \"path\": \"README.md\",\n      \"offset\": 1,\n      \"limit\": 80\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - find_files",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: pattern (string requerido, glob); path (string opcional, base predeterminada primera raíz). Omite node_modules, .git y dist.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 13,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"find_files\",\n    \"arguments\": {\n      \"pattern\": \"**/*.ts\",\n      \"path\": \".\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - search_text",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: pattern (string requerido); path, glob (strings opcionales); ignore_case y literal (boolean opcionales). literal=true busca texto literal. Máximo 200 resultados.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 14,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"search_text\",\n    \"arguments\": {\n      \"pattern\": \"registerTool\",\n      \"path\": \"src\",\n      \"glob\": \"*.ts\",\n      \"ignore_case\": false,\n      \"literal\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - internet_search (opcional)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: query (string requerido, min 2); count (integer opcional 1..10, default 5). Disponible solo con Brave API key; consulta enviada a Brave.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 15,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"internet_search\",\n    \"arguments\": {\n      \"query\": \"Model Context Protocol Streamable HTTP\",\n      \"count\": 5\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - run_terminal (opcional / potente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: command (string requerido 1..10000 chars); cwd (string opcional); timeout_ms (integer opcional 1000..120000, default 30000). Solo si terminal habilitada y no read-only. Ejecuta comandos con permisos del proceso: cuidado.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 16,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"run_terminal\",\n    \"arguments\": {\n      \"command\": \"Get-Location; Get-ChildItem -Name\",\n      \"cwd\": \".\",\n      \"timeout_ms\": 30000\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - write_file (modifica)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: path y content (strings requeridos). Crea/reemplaza archivo; no disponible en modo solo lectura. El ejemplo escribe archivo, cambialo por ruta de prueba bajo una raíz habilitada.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 17,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"write_file\",\n    \"arguments\": {\n      \"path\": \"postman/example.txt\",\n      \"content\": \"Ejemplo creado desde Postman\\n\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tool - edit_file (modifica)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mcpToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream",
+                "type": "text"
+              }
+            ],
+            "url": "{{mcpUrl}}",
+            "description": "Args: path, old_string, new_string (strings requeridos); replace_all (boolean opcional, default false). Leer antes; old_string debe ser único salvo replace_all=true. No disponible en solo lectura.\n\nJSON-RPC `tools/call`; los parámetros van en `params.arguments`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 18,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"edit_file\",\n    \"arguments\": {\n      \"path\": \"README.md\",\n      \"old_string\": \"texto exacto que exista\",\n      \"new_string\": \"texto reemplazado\",\n      \"replace_all\": false\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth propietario (opcional)",
+      "description": "Login de usuario separado del token de servicio MCP. Requiere PC_MCP_AUTH_USERNAME/PASSWORD/USER_ID configurados. Sesiones en memoria, expiran a las 8 h.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{apiBaseUrl}}/auth/login",
+            "description": "POST JSON con credenciales del propietario. Guarda accessToken como workspaceBearer para usar en /auth/me y /auth/logout.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) { const d=pm.response.json(); if (d.accessToken) pm.environment.set(\"workspaceBearer\",d.accessToken); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me / introspección",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workspaceBearer}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{apiBaseUrl}}/auth/me",
+            "description": "Valida workspaceBearer y devuelve userId, email y name."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workspaceBearer}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{apiBaseUrl}}/auth/logout",
+            "description": "Revoca la sesión y borra workspaceBearer tras HTTP 204."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 204) pm.environment.unset(\"workspaceBearer\");"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "apiBaseUrl",
+      "value": "http://localhost:3020"
+    },
+    {
+      "key": "mcpUrl",
+      "value": "http://localhost:3020/mcp"
+    },
+    {
+      "key": "mcpToken",
+      "value": ""
+    },
+    {
+      "key": "authUsername",
+      "value": ""
+    },
+    {
+      "key": "authPassword",
+      "value": ""
+    },
+    {
+      "key": "workspaceBearer",
+      "value": ""
+    }
+  ]
+}
