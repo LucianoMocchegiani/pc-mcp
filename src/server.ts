@@ -5,6 +5,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { z } from 'zod';
 import { config } from './config.js';
 import { AuthService } from './auth/service.js';
+import { isAuthorizedMcpRequest } from './auth/mcp-authorization.js';
 import { createAuthRoutes } from './auth/routes.js';
 import {
   editTextFile,
@@ -184,23 +185,24 @@ function registerTools(server: McpServer): void {
   );
 }
 
-function sameSecret(header: string | undefined): boolean {
-  const expected = createHash('sha256').update(`Bearer ${config.token}`).digest();
-  const received = createHash('sha256').update(header ?? '').digest();
-  return timingSafeEqual(expected, received);
-}
-
 /**
- * `/health` sin auth; `/mcp` exige `Authorization: Bearer <WORKSPACE_MCP_TOKEN>`. Stateless: un McpServer por request.
+ * `/health` sin auth; `/mcp` exige el secreto de servicio y una sesión de usuario activa.
+ * Stateless: un McpServer por request.
  */
 export function createApp(): Hono {
   const app = new Hono();
+  const auth = new AuthService(config.ownerAuth);
 
   app.get('/health', (c) => c.json({ status: 'ok' }));
-  app.route('/auth', createAuthRoutes(new AuthService(config.ownerAuth)));
+  app.route('/auth', createAuthRoutes(auth));
 
   app.all('/mcp', async (c) => {
-    if (!sameSecret(c.req.header('Authorization'))) {
+    if (!isAuthorizedMcpRequest(
+      c.req.header('X-Workspace-MCP-Token'),
+      c.req.header('Authorization'),
+      config.token,
+      auth,
+    )) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
     const server = new McpServer({ name: 'workspace-mcp', version: '0.0.1' });
