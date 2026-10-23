@@ -9,9 +9,9 @@ services:
     environment:
       WORKSPACE_MCP_ROOTS: /workspace
       WORKSPACE_MCP_HOST: 0.0.0.0
-      WORKSPACE_MCP_PORT: 3020
+      WORKSPACE_MCP_PORT: 3040
     ports:
-      - "127.0.0.1:${WORKSPACE_MCP_PORT:-3020}:3020"
+      - "127.0.0.1:${WORKSPACE_MCP_PORT:-3040}:3040"
     volumes:
       - type: bind
         source: ${WORKSPACE_MCP_WORKSPACE:-.}
