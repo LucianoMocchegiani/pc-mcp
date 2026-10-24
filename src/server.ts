@@ -38,79 +38,79 @@ async function run(tool: string, detail: string, action: () => Promise<string> |
 const readOnly = { readOnlyHint: true, openWorldHint: false } as const;
 
 function registerTools(server: McpServer): void {
-  server.registerTool(
-    'list_roots',
-    {
-      description: 'Muestra las carpetas habilitadas y el modo (lectura o escritura). Llamala primero si no sabés dónde buscar.',
-      inputSchema: z.object({}),
-      annotations: readOnly,
-    },
-    () => run('list_roots', '', () => listRoots()),
-  );
+  // server.registerTool(
+  //   'list_roots',
+  //   {
+  //     description: 'Muestra las carpetas habilitadas y el modo (lectura o escritura). Llamala primero si no sabés dónde buscar.',
+  //     inputSchema: z.object({}),
+  //     annotations: readOnly,
+  //   },
+  //   () => run('list_roots', '', () => listRoots()),
+  // );
 
-  server.registerTool(
-    'list_dir',
-    {
-      description: 'Lista el contenido de una carpeta (árbol hasta depth niveles, máx. 3).',
-      inputSchema: z.object({
-        path: z.string().describe('Ruta absoluta o relativa a la primera carpeta habilitada'),
-        depth: z.number().int().min(1).max(3).optional(),
-      }),
-      annotations: readOnly,
-    },
-    (args) => run('list_dir', args.path, () => listDir(args.path, args.depth)),
-  );
+  // server.registerTool(
+  //   'list_dir',
+  //   {
+  //     description: 'Lista el contenido de una carpeta (árbol hasta depth niveles, máx. 3).',
+  //     inputSchema: z.object({
+  //       path: z.string().describe('Ruta absoluta o relativa a la primera carpeta habilitada'),
+  //       depth: z.number().int().min(1).max(3).optional(),
+  //     }),
+  //     annotations: readOnly,
+  //   },
+  //   (args) => run('list_dir', args.path, () => listDir(args.path, args.depth)),
+  // );
 
-  server.registerTool(
-    'read_file',
-    {
-      description: 'Lee un archivo de texto con números de línea. Para archivos largos usá offset y limit.',
-      inputSchema: z.object({
-        path: z.string(),
-        offset: z.number().int().min(1).optional().describe('Primera línea (1 = inicio)'),
-        limit: z.number().int().min(1).max(2000).optional().describe('Cantidad de líneas (default 400)'),
-      }),
-      annotations: readOnly,
-    },
-    (args) => run('read_file', args.path, () => readTextFile(args.path, args.offset, args.limit)),
-  );
+  // server.registerTool(
+  //   'read_file',
+  //   {
+  //     description: 'Lee un archivo de texto con números de línea. Para archivos largos usá offset y limit.',
+  //     inputSchema: z.object({
+  //       path: z.string(),
+  //       offset: z.number().int().min(1).optional().describe('Primera línea (1 = inicio)'),
+  //       limit: z.number().int().min(1).max(2000).optional().describe('Cantidad de líneas (default 400)'),
+  //     }),
+  //     annotations: readOnly,
+  //   },
+  //   (args) => run('read_file', args.path, () => readTextFile(args.path, args.offset, args.limit)),
+  // );
 
-  server.registerTool(
-    'find_files',
-    {
-      description: 'Busca archivos por patrón glob (ej. "**/*.ts", "package.json"). Ignora node_modules, .git, dist.',
-      inputSchema: z.object({
-        pattern: z.string(),
-        path: z.string().optional().describe('Carpeta base (default: la primera habilitada)'),
-      }),
-      annotations: readOnly,
-    },
-    (args) => run('find_files', `${args.pattern} in ${args.path ?? '.'}`, () => findFiles(args.pattern, args.path)),
-  );
+  // server.registerTool(
+  //   'find_files',
+  //   {
+  //     description: 'Busca archivos por patrón glob (ej. "**/*.ts", "package.json"). Ignora node_modules, .git, dist.',
+  //     inputSchema: z.object({
+  //       pattern: z.string(),
+  //       path: z.string().optional().describe('Carpeta base (default: la primera habilitada)'),
+  //     }),
+  //     annotations: readOnly,
+  //   },
+  //   (args) => run('find_files', `${args.pattern} in ${args.path ?? '.'}`, () => findFiles(args.pattern, args.path)),
+  // );
 
-  server.registerTool(
-    'search_text',
-    {
-      description: 'Busca texto (regex) dentro de archivos. Devuelve archivo:línea: contenido. Máx. 200 resultados.',
-      inputSchema: z.object({
-        pattern: z.string(),
-        path: z.string().optional().describe('Carpeta base (default: la primera habilitada)'),
-        glob: z.string().optional().describe('Filtra archivos, ej. "*.ts"'),
-        ignore_case: z.boolean().optional(),
-        literal: z.boolean().optional().describe('true = texto literal, no regex'),
-      }),
-      annotations: readOnly,
-    },
-    (args) =>
-      run('search_text', `${args.pattern} in ${args.path ?? '.'}`, () =>
-        searchText(args.pattern, {
-          path: args.path,
-          glob: args.glob,
-          ignoreCase: args.ignore_case,
-          literal: args.literal,
-        }),
-      ),
-  );
+  // server.registerTool(
+  //   'search_text',
+  //   {
+  //     description: 'Busca texto (regex) dentro de archivos. Devuelve archivo:línea: contenido. Máx. 200 resultados.',
+  //     inputSchema: z.object({
+  //       pattern: z.string(),
+  //       path: z.string().optional().describe('Carpeta base (default: la primera habilitada)'),
+  //       glob: z.string().optional().describe('Filtra archivos, ej. "*.ts"'),
+  //       ignore_case: z.boolean().optional(),
+  //       literal: z.boolean().optional().describe('true = texto literal, no regex'),
+  //     }),
+  //     annotations: readOnly,
+  //   },
+  //   (args) =>
+  //     run('search_text', `${args.pattern} in ${args.path ?? '.'}`, () =>
+  //       searchText(args.pattern, {
+  //         path: args.path,
+  //         glob: args.glob,
+  //         ignoreCase: args.ignore_case,
+  //         literal: args.literal,
+  //       }),
+  //     ),
+  // );
 
   if (config.braveSearchApiKey) {
     server.registerTool(
@@ -135,54 +135,54 @@ function registerTools(server: McpServer): void {
     return;
   }
 
-  if (config.terminalEnabled) {
-    server.registerTool(
-      'run_terminal',
-      {
-        description:
-          'Ejecuta un comando único en el shell del sistema. Puede modificar archivos y ejecutar cualquier programa con los permisos del proceso workspace-mcp; usala solo con comandos autorizados. El directorio de trabajo debe estar dentro de las carpetas habilitadas. Timeout máximo 120 segundos; salida máxima 64 KiB.',
-        inputSchema: z.object({
-          command: z.string().min(1).max(10_000).describe('Comando para el shell del sistema'),
-          cwd: z.string().optional().describe('Directorio de trabajo dentro de las carpetas habilitadas (default: primera carpeta habilitada)'),
-          timeout_ms: z.number().int().min(1_000).max(120_000).optional().describe('Timeout (default 30 s, máximo 120 s)'),
-        }),
-        annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
-      },
-      (args) => run('run_terminal', args.cwd ?? '.', () => runTerminal(args.command, args.cwd, args.timeout_ms)),
-    );
-  }
+  // if (config.terminalEnabled) {
+  //   server.registerTool(
+  //     'run_terminal',
+  //     {
+  //       description:
+  //         'Ejecuta un comando único en el shell del sistema. Puede modificar archivos y ejecutar cualquier programa con los permisos del proceso workspace-mcp; usala solo con comandos autorizados. El directorio de trabajo debe estar dentro de las carpetas habilitadas. Timeout máximo 120 segundos; salida máxima 64 KiB.',
+  //       inputSchema: z.object({
+  //         command: z.string().min(1).max(10_000).describe('Comando para el shell del sistema'),
+  //         cwd: z.string().optional().describe('Directorio de trabajo dentro de las carpetas habilitadas (default: primera carpeta habilitada)'),
+  //         timeout_ms: z.number().int().min(1_000).max(120_000).optional().describe('Timeout (default 30 s, máximo 120 s)'),
+  //       }),
+  //       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+  //     },
+  //     (args) => run('run_terminal', args.cwd ?? '.', () => runTerminal(args.command, args.cwd, args.timeout_ms)),
+  //   );
+  // }
 
-  server.registerTool(
-    'write_file',
-    {
-      description: 'Crea o reemplaza un archivo completo (crea las carpetas que falten). Para cambios chicos usá edit_file.',
-      inputSchema: z.object({
-        path: z.string(),
-        content: z.string(),
-      }),
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-    },
-    (args) => run('write_file', args.path, () => writeTextFile(args.path, args.content)),
-  );
+  // server.registerTool(
+  //   'write_file',
+  //   {
+  //     description: 'Crea o reemplaza un archivo completo (crea las carpetas que falten). Para cambios chicos usá edit_file.',
+  //     inputSchema: z.object({
+  //       path: z.string(),
+  //       content: z.string(),
+  //     }),
+  //     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  //   },
+  //   (args) => run('write_file', args.path, () => writeTextFile(args.path, args.content)),
+  // );
 
-  server.registerTool(
-    'edit_file',
-    {
-      description:
-        'Reemplaza texto exacto en un archivo. old_string debe aparecer una sola vez (o usá replace_all). Leé el archivo antes.',
-      inputSchema: z.object({
-        path: z.string(),
-        old_string: z.string(),
-        new_string: z.string(),
-        replace_all: z.boolean().optional(),
-      }),
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-    },
-    (args) =>
-      run('edit_file', args.path, () =>
-        editTextFile(args.path, args.old_string, args.new_string, args.replace_all),
-      ),
-  );
+  // server.registerTool(
+  //   'edit_file',
+  //   {
+  //     description:
+  //       'Reemplaza texto exacto en un archivo. old_string debe aparecer una sola vez (o usá replace_all). Leé el archivo antes.',
+  //     inputSchema: z.object({
+  //       path: z.string(),
+  //       old_string: z.string(),
+  //       new_string: z.string(),
+  //       replace_all: z.boolean().optional(),
+  //     }),
+  //     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  //   },
+  //   (args) =>
+  //     run('edit_file', args.path, () =>
+  //       editTextFile(args.path, args.old_string, args.new_string, args.replace_all),
+  //     ),
+  // );
 }
 
 /**
